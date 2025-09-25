@@ -2,11 +2,14 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { initializeEffects } from '../utils/effects';
 import TargetConfigPanel from '../components/pentest/TargetConfigPanel';
 import ScanConfigWizard from '../components/pentest/ScanConfigWizard';
+import SecurityScanModal from '../components/pentest/SecurityScanModal';
+import ScanResultsDisplay from '../components/pentest/ScanResultsDisplay';
 import { 
   PentestWorkflowState, 
   ScanConfig
 } from '../types/pentest';
 import { pentestApi } from '../services/pentestApi';
+import { useSecurityScan } from '../hooks/useSecurityScan';
 
 const PenetrationTesting: React.FC = () => {
   const [workflowState, setWorkflowState] = useState<PentestWorkflowState>({
@@ -17,6 +20,19 @@ const PenetrationTesting: React.FC = () => {
 
   const [targetsValid, setTargetsValid] = useState(false);
   const [targetErrors, setTargetErrors] = useState<string[]>([]);
+
+  // Security Scan Hook
+  const {
+    isModalOpen,
+    isScanning,
+    scanResults,
+    hasResults,
+    error: scanError,
+    progress,
+    openModal,
+    closeModal,
+    launchScan
+  } = useSecurityScan();
 
   useEffect(() => {
     initializeEffects();
@@ -182,6 +198,43 @@ const PenetrationTesting: React.FC = () => {
                   </>
                 )}
               </button>
+            </div>
+
+            {/* Security Scan Section */}
+            <div className="security-scan-section">
+              <div className="scan-section-header">
+                <h3>🛡️ Azure Security Scanning</h3>
+                <p>Launch comprehensive penetration testing using Azure Container Apps infrastructure</p>
+              </div>
+              <div className="scan-controls">
+                <button
+                  onClick={openModal}
+                  disabled={isScanning}
+                  className="launch-security-scan-btn"
+                >
+                  {isScanning ? (
+                    <>
+                      <span className="spinner"></span>
+                      Scanning in Progress...
+                    </>
+                  ) : (
+                    <>
+                      🚀 Launch Security Scan
+                    </>
+                  )}
+                </button>
+                {progress && (
+                  <div className="scan-progress">
+                    <span className="progress-text">{progress}</span>
+                  </div>
+                )}
+                {scanError && (
+                  <div className="scan-error">
+                    <i className="fas fa-exclamation-triangle"></i>
+                    {scanError}
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Validation Errors */}
@@ -925,7 +978,150 @@ const PenetrationTesting: React.FC = () => {
             gap: 1rem;
           }
         }
+
+        /* Security Scan Section Styles */
+        .security-scan-section {
+          margin-top: 2rem;
+          padding: 1.5rem;
+          background: var(--bg-secondary);
+          border-radius: 12px;
+          border: 1px solid var(--border-primary);
+        }
+
+        .scan-section-header {
+          text-align: center;
+          margin-bottom: 1.5rem;
+        }
+
+        .scan-section-header h3 {
+          margin: 0 0 0.5rem;
+          font-size: 1.5rem;
+          font-weight: 600;
+          color: var(--text-primary);
+        }
+
+        .scan-section-header p {
+          margin: 0;
+          color: var(--text-secondary);
+          font-size: 1rem;
+        }
+
+        .scan-controls {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 1rem;
+        }
+
+        .launch-security-scan-btn {
+          padding: 16px 32px;
+          background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary, #7c3aed) 100%);
+          color: white;
+          border: none;
+          border-radius: 12px;
+          font-size: 1.1rem;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          min-height: 56px;
+          box-shadow: 0 4px 15px rgba(var(--accent-primary-rgb), 0.3);
+        }
+
+        .launch-security-scan-btn:hover:not(:disabled) {
+          transform: translateY(-2px);
+          box-shadow: 0 8px 25px rgba(var(--accent-primary-rgb), 0.4);
+        }
+
+        .launch-security-scan-btn:disabled {
+          opacity: 0.7;
+          cursor: not-allowed;
+          transform: none;
+        }
+
+        .spinner {
+          width: 16px;
+          height: 16px;
+          border: 2px solid transparent;
+          border-top: 2px solid currentColor;
+          border-radius: 50%;
+          animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+          to {
+            transform: rotate(360deg);
+          }
+        }
+
+        .scan-progress {
+          text-align: center;
+          padding: 8px 16px;
+          background: var(--bg-primary);
+          border-radius: 6px;
+          border: 1px solid var(--border-primary);
+        }
+
+        .progress-text {
+          font-size: 0.9rem;
+          color: var(--text-secondary);
+        }
+
+        .scan-error {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          padding: 12px 16px;
+          background: rgba(var(--accent-danger-rgb), 0.1);
+          color: var(--accent-danger);
+          border-radius: 6px;
+          border: 1px solid var(--accent-danger);
+          font-size: 0.9rem;
+        }
+
+        .scan-results-overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(0, 0, 0, 0.75);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 2000;
+          padding: 20px;
+        }
+
+        .scan-results-container {
+          width: 100%;
+          max-width: 1200px;
+          max-height: 90vh;
+          overflow: hidden;
+        }
       `}</style>
+
+      {/* Security Scan Modal */}
+      <SecurityScanModal
+        isOpen={isModalOpen}
+        onClose={closeModal}
+        onLaunchScan={launchScan}
+        isScanning={isScanning}
+      />
+
+      {/* Scan Results Display */}
+      {hasResults && scanResults && (
+        <div className="scan-results-overlay">
+          <div className="scan-results-container">
+            <ScanResultsDisplay
+              results={scanResults}
+              onClose={() => {}} // Results stay open until manually managed
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };
