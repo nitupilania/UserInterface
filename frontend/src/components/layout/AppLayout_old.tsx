@@ -1,6 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
-import CybrtyHeader from './CybrtyHeader';
+import { 
+  Shield, Home, AlertTriangle, ChevronDown, Eye, Zap, Activity, 
+  FileCheck, BarChart3, BookOpen, UserCheck, Network, Search, 
+  Bell, User, Menu, Database, ScanLine as Scan 
+} from 'lucide-react';
 import { initializeEffects, createRipple } from '../../utils/effects';
 
 const AppLayout: React.FC = () => {
